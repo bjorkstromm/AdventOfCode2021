@@ -25,9 +25,24 @@ let processMeasurements measurements =
 
     head::tail
 
+// Part 1
 let getIncreases filename =
     filename
     |> getMeasurements
     |> processMeasurements
+    |> Seq.filter (fun (a, b) -> b = Increased)
+    |> Seq.length
+
+// Part 2
+let processWindowed (measurements : seq<int>) =
+    measurements
+    |> Seq.windowed 3
+    |> Seq.map (fun m -> Array.sum m)
+    |> processMeasurements
+
+let getIncreasesWindowed filename =
+    filename
+    |> getMeasurements
+    |> processWindowed
     |> Seq.filter (fun (a, b) -> b = Increased)
     |> Seq.length
