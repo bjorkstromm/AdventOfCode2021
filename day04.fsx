@@ -99,3 +99,38 @@ let part1 filename =
     | Some (n, board) ->
         let sum = sumUnmarked board
         sum * n
+
+// Part 2
+let playBingoUntilLast filename =
+    let rec loop (numbers : int list) (boards : (int * bool)[,][]) =
+        match numbers with
+        | [] -> None
+        | head::tail ->
+            let newBoards =
+                boards
+                |> Array.Parallel.map (fun b -> b |> addNumToBoard head)
+
+            let notWinners =
+                newBoards
+                |> Array.filter (fun (w, _) -> not(w))
+                |> Array.map snd
+
+            if notWinners.Length > 0 then
+                loop tail notWinners
+            else
+                let winners =
+                    newBoards
+                    |> Array.filter (fun (w, _) -> w)
+                    |> Array.map snd
+                Some (head, winners[0])
+
+    let (numbers, boards) = getData filename
+
+    loop numbers boards
+
+let part2 filename =
+    match playBingoUntilLast filename with
+    | None -> 0
+    | Some (n, board) ->
+        let sum = sumUnmarked board
+        sum * n
