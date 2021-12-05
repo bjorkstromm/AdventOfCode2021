@@ -12,18 +12,42 @@ let isHorizontal line = line.A.Y = line.B.Y
 
 let isVertical line = line.A.X = line.B.X
 
+let isDiagonal line =
+    abs(line.A.X - line.B.X) = abs(line.A.Y - line.B.Y)
+
 let (|Horizontal|_|) line =
     if line |> isHorizontal then
         let x1 = min line.A.X line.B.X
         let x2 = max line.A.X line.B.X
-        Some [x1..x2]
+        [x1..x2]
+        |> List.map (fun x -> { X = x; Y = line.A.Y })
+        |> Some
     else None
 
 let (|Vertical|_|) line =
     if line |> isVertical then
         let y1 = min line.A.Y line.B.Y
         let y2 = max line.A.Y line.B.Y
-        Some [y1..y2]
+        [y1..y2]
+        |> List.map (fun y -> { X = line.A.X; Y = y })
+        |> Some
+    else None
+
+// Part 2
+let (|Diagonal|_|) line =
+    if line |> isDiagonal then
+        let yDir = if line.A.Y < line.B.Y then 1 else -1
+        let xDir = if line.A.X < line.B.X then 1 else -1
+
+        let rec loop points point =
+            match point with
+            | p when p = line.B -> p::points |> List.rev
+            | p ->
+                let x = p.X + xDir
+                let y = p.Y + yDir
+                loop (p::points) { X = x; Y = y }
+
+        loop [] line.A |> Some
     else None
 
 let getPoints filename =
@@ -47,8 +71,9 @@ let getPoints filename =
 
 let getLinePoints line =
     match line with
-    | Horizontal xs -> xs |> List.map (fun x -> { X = x; Y = line.A.Y })
-    | Vertical ys -> ys |> List.map (fun y -> { X = line.A.X; Y = y })
+    | Horizontal points -> points
+    | Vertical points -> points
+    | Diagonal points -> points
     | _ -> []
 
 let addLine map line =
@@ -81,5 +106,3 @@ let toArray2D map =
         arr.[k.Y, k.X] <- v)
 
     arr
-
-"test.txt" |> getPoints |> List.fold addLine Map.empty |> toArray2D;;
