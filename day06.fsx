@@ -51,12 +51,10 @@ let simulateMap days filename =
         else
             [0..8]
             |> Seq.map (fun i ->
-                if i = 6 then
-                    (i, map.[0] + map.[7])
-                else if i = 8 then
-                    (i, map.[0])
-                else
-                    (i, map.[i + 1]))
+                match i with
+                | 6 -> (i, map.[0] + map.[7])                   
+                | 8 -> (i, map.[0])
+                | i -> (i, map.[i + 1]))
             |> Map.ofSeq
             |> loop (day + 1)
 
