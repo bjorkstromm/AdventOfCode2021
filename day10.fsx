@@ -55,3 +55,35 @@ let part1 filename =
     |> Array.Parallel.map parseLine
     |> Array.map points
     |> Array.sum
+
+// Part 2
+let incompletePoints status =
+    let folder total char =
+        let total' = total * 5L
+        match char with
+        | ')' -> total' + 1L
+        | ']' -> total' + 2L
+        | '}' -> total' + 3L
+        | '>' -> total' + 4L
+        | _ -> total
+
+    match status with
+    | Ok -> None
+    | Corrupted _ -> None
+    | Incomplete stack ->
+        stack
+        |> List.fold folder 0L
+        |> Some
+
+let median sums =
+    let index = (sums |> Array.length |> float) / 2. |> int
+    let sorted = sums |> Array.sort
+    sorted.[index]
+
+let part2 filename =
+    filename
+    |> System.IO.File.ReadAllLines
+    |> Array.Parallel.map parseLine
+    |> Array.map incompletePoints
+    |> Array.choose id
+    |> median
