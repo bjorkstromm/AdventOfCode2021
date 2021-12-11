@@ -59,33 +59,33 @@ let executeStep map =
 
 let part1 filename iterations =
     let folder (n, map) _ =
-        let map' = executeStep map
+        let map = executeStep map
         let n' =
             map
             |> Seq.cast<int>
             |> Seq.filter (fun v -> v = 0)
             |> Seq.length
-        (n + n', map')
+        (n + n', map)
 
     let map = getMap filename
 
-    [0..iterations]
+    [1..iterations]
     |> List.fold folder (0, map)
     |> fst
 
 // Part 2
 let part2 filename =
     let rec loop map target i =
-        let map' = executeStep map
+        let map = executeStep map
         let sum =
             map
             |> Seq.cast<int>
             |> Seq.filter (fun v -> v = 0)
             |> Seq.length
 
-        if sum = target then i else loop map' target (i + 1)
+        if sum = target then i else loop map target (i + 1)
 
     let map = getMap filename
     let cnt = (map |> Array2D.length1) * (map |> Array2D.length2)
 
-    loop map cnt 0
+    loop map cnt 1
