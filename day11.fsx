@@ -6,15 +6,6 @@ let getMap filename =
         |> Array.map (System.Char.GetNumericValue >> int))
     |> array2D
 
-// let getCoordinates map =
-//     let yMax = (map |> Array2D.length1) - 1
-//     let xMax = (map |> Array2D.length2) - 1
-//     [0..yMax]
-//     |> List.map (fun y ->
-//         [0..xMax]
-//         |> List.map (fun x -> (x, y)))
-//     |> List.concat
-
 let increaseByOne map =
     map |> Array2D.map ((+) 1)
 
