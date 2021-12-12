@@ -11,6 +11,9 @@ let createCave (str : string) =
     let size = if str.ToUpper() = str then Big else Small
     { Name = str; Size = size }
 
+let start = createCave "start"
+let end' = createCave "end"
+
 let getConnections filename =
     filename
     |> System.IO.File.ReadAllLines
@@ -22,30 +25,28 @@ let getConnections filename =
             [|(left,right);(right,left)|]
         | _ -> [||])
     |> Array.concat
+    |> Array.filter (fun (l,r) -> l <> end' && r <> start)
     |> Array.groupBy fst
     |> Array.map (fun (k,v) -> (k, v |> Array.map snd))
     |> Map.ofArray
 
-let canVisit visited cave =
+let canVisit1 visited cave =
     match cave.Size with
     | Big -> true
     | Small -> not (visited |> List.contains cave)
 
-let traverse (connections : Map<Cave, Cave[]>) =
-    let start = createCave "start"
-    let end' = createCave "end"
-    
+let traverse canVisit (connections : Map<Cave, Cave[]>) =
     let rec loop (current : Cave) (visited : Cave list) : Cave list list =
         if current = end' then
             [end'::visited |> List.rev]
         else
             connections.[current]
             |> Array.Parallel.map (fun cave ->
+                let visited = current::visited
                 if cave |> canVisit visited then
-                    current::visited
-                    |> loop cave
+                    visited |> loop cave
                 else
-                    [visited])
+                    [visited |> List.rev])
             |> List.concat
 
     loop start []
@@ -55,5 +56,25 @@ let traverse (connections : Map<Cave, Cave[]>) =
 let part1 filename =
     filename
     |> getConnections
-    |> traverse
+    |> traverse canVisit1
+    |> List.length
+
+// Part 2
+let canVisit2 visited cave =
+    let smallVisited =
+        visited
+        |> List.filter (fun c -> c.Size = Small)
+        |> List.countBy (fun c -> c.Name)
+        |> List.map snd
+        |> List.append [0]
+        |> List.max
+
+    match cave.Size with
+    | Big -> true
+    | Small -> (not (visited |> List.contains cave)) || smallVisited < 2
+
+let part2 filename =
+    filename
+    |> getConnections
+    |> traverse canVisit2
     |> List.length
