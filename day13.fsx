@@ -101,9 +101,18 @@ let part1 filename =
     |> Seq.filter (fun x -> x > 0)
     |> Seq.length
 
+// Part 2
+let print (paper : int[,]) =
+    [0..(paper |> Array2D.length1) - 1]
+    |> Seq.map (fun y ->
+        paper.[y, *]
+        |> Array.map (fun v -> if v > 0 then '#' else ' ')
+        |> System.String)
+    |> Seq.iter (fun line -> printfn "%A" line)
 
-// let a = [|[|0;0;1;0;0;2;2|]|] |> array2D;;
-// applyInstruction a { Axis = XAxis; Index =  4};;
+let part2 filename =
+    let (paper, instructions) = getInput filename
 
-// let b = [|[|0|];[|0|];[|1|];[|0|];[|0|];[|2|];[|2|]|] |> array2D;;
-// applyInstruction b { Axis = YAxis; Index =  4};;
+    instructions
+    |> List.fold (fun paper instruction -> applyInstruction paper instruction) paper
+    |> print
