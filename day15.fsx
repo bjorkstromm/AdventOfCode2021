@@ -47,3 +47,27 @@ let part1 filename =
     filename
     |> getMap
     |> findPaths
+
+// Part 2
+let scaleMap (scale : int) (map : Map<int * int, int>) =
+    let (xMax, yMax) = ((map.Keys |> Seq.maxBy fst |> fst) + 1, (map.Keys |> Seq.maxBy snd |> snd) + 1)
+
+    [0..(yMax * scale) - 1]
+    |> Seq.map (fun y ->
+        [0..(xMax * scale) - 1]
+        |> Seq.map (fun x ->
+            let x' = x % xMax
+            let y' = y % yMax
+            let distance = (y / yMax) + (x / xMax)
+            let risk = ((map.[(x',y')] + distance - 1) % 9) + 1
+            ((x,y), risk)
+            )
+        )
+    |> Seq.concat
+    |> Map.ofSeq
+
+let part2 filename =
+    filename
+    |> getMap
+    |> scaleMap 5
+    |> findPaths
