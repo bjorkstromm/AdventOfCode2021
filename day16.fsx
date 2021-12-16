@@ -60,22 +60,22 @@ let rec parse (input : seq<char>) =
         [|
             let mutable continue' = true
             while continue' do
-                e.MoveNext() |> ignore
+                e |> advance |> ignore
                 continue' <- e.Current = '1'
-                e.MoveNext() |> ignore
+                e |> advance |> ignore
                 let v = (e |> take 4)
                 yield! v
         |] |> String |> binToInt64
 
     let rec parseOperator (e : IEnumerator<char>) =
-        e.MoveNext() |> ignore
+        e |> advance |> ignore
         let lenBits = if e.Current = '0' then 15 else 11
-        e.MoveNext() |> ignore
+        e |> advance |> ignore
         match e |> parseInt lenBits with
         | None -> []
         | Some len ->
             if lenBits = 15 then // length
-                e.MoveNext() |> ignore
+                e |> advance |> ignore
                 e |> take len |> parse |> Seq.toList
             else // subpackets
                 [0..len-1]
