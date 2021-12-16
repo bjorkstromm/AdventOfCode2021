@@ -23,6 +23,9 @@ let binToDec (str : string) =
     Convert.ToInt32(str, 2)
 
 let rec parse (padded : bool) (input : seq<char>) =
+    let advance (e : IEnumerator<char>) =
+        e.MoveNext()
+
     let take cnt (e : IEnumerator<char>) =
         seq {
             for i in 1..cnt do
