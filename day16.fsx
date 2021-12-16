@@ -25,17 +25,18 @@ let binToDec (str : string) =
 let rec parse (padded : bool) (input : seq<char>) =
     let take cnt (e : IEnumerator<char>) =
         seq {
-            for _ in 1..cnt do
+            for i in 1..cnt do
                 let c = e.Current
-                e.MoveNext() |> ignore
+                if i <> cnt then e.MoveNext() |> ignore
                 yield c
         }
 
     let parseInt cnt e =
         e |> take cnt |> Seq.toArray |> String |> binToDec
 
-    let parsePackageHeader e =
+    let parsePackageHeader (e : IEnumerator<char>) =
         let version = e |> parseInt 3
+        e.MoveNext() |> ignore
         let type' = e |> parseInt 3
         { Version = version; Type = type' }
 
@@ -45,20 +46,24 @@ let rec parse (padded : bool) (input : seq<char>) =
             let mutable continue' = true
             while continue' do
                 groups <- groups + 1
+                e.MoveNext() |> ignore
                 continue' <- e.Current = '1'
                 e.MoveNext() |> ignore
-                yield! (e |> take 4)
+                let v = (e |> take 4)
+                yield! v
 
             if padded then
                 let discard = 4 - (((groups * 5) + 6) % 4)
-                for _ in 1..discard do
+                for _ in 0..discard do
                     e.MoveNext() |> ignore
         |] |> String |> binToDec
 
     let parseOperator (e : IEnumerator<char>) =
+        e.MoveNext() |> ignore
         let lenBits = if e.Current = '0' then 15 else 11
         e.MoveNext() |> ignore
         let len = e |> parseInt lenBits
+        e.MoveNext() |> ignore
 
         e
         |> take len
