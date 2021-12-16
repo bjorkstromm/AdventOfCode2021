@@ -128,7 +128,50 @@ let part1 filename =
     |> parseHex
     |> sumVersion
 
+// Part 2
+let rec eval package =
+    let reduce fn p =
+        p |> List.map eval |> List.reduce (fn)
+
+    let compare fn p =
+        match p with
+        | [rp;lp] ->
+            let r = rp |> eval
+            let l = lp |> eval
+            if fn l r then 1L else 0L
+        | _ -> 0L
+        //| p -> failwithf "Invalid number of packages %d" p.Length
+
+    match package with
+    | Literal (_, v) -> v
+    | Operator (h, p) ->
+        match (h.Type) with
+        | 0 -> p |> reduce (+) // sum
+        | 1 -> p |> reduce (*) // product
+        | 2 -> p |> reduce (min) // minimum
+        | 3 -> p |> reduce (max) // maximum
+        | 5 -> p |> compare (>) // greater-than
+        | 6 -> p |> compare (<) // less than
+        | 7 -> p |> compare (=) // equal
+        | t -> failwithf "Invalid operator type %d" t
+
+let part2 filename =
+    filename
+    |> System.IO.File.ReadAllText
+    |> parseHex
+    |> Seq.map eval
+    |> Seq.toList
+
 "8A004A801A8002F478" |> parseHex |> sumVersion
 "620080001611562C8802118E34" |> hexToBin |> parse |> sumVersion
 "C0015000016115A2E0802F182340" |> parseHex |> sumVersion
 "A0016C880162017C3686B18A3D4780" |> parseHex |> sumVersion
+
+"C200B40A82" |> parseHex |> Seq.map eval
+"04005AC33890" |> parseHex |> Seq.map eval
+"880086C3E88112" |> parseHex |> Seq.map eval
+"CE00C43D881120"  |> parseHex |> Seq.map eval
+"D8005AC2A8F0" |> parseHex |> Seq.map eval
+"F600BC2D8F" |> parseHex |> Seq.map eval
+"9C005AC2F8F0" |> parseHex |> Seq.map eval
+"9C0141080250320F1802104A08" |> parseHex |> Seq.map eval
