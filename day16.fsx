@@ -22,26 +22,36 @@ let hexToBin (str : seq<char>) =
 let binToDec (str : string) =
     Convert.ToInt32(str, 2)
 
-let rec parse (padded : bool) (input : seq<char>) =
+let rec parse (input : seq<char>) =
     let advance (e : IEnumerator<char>) =
         e.MoveNext()
 
     let take cnt (e : IEnumerator<char>) =
         seq {
+            let mutable continue' = true
             for i in 1..cnt do
-                let c = e.Current
-                if i <> cnt then e.MoveNext() |> ignore
-                yield c
+                if continue' then
+                    let c = e.Current
+                    if i <> cnt then continue' <- e |> advance
+                    yield c
         }
 
     let parseInt cnt e =
-        e |> take cnt |> Seq.toArray |> String |> binToDec
+        let arr = e |> take cnt |> Seq.toArray
+        if arr.Length <> cnt then None
+        else arr |> String |> binToDec |> Some
 
     let parsePackageHeader (e : IEnumerator<char>) =
-        let version = e |> parseInt 3
-        e.MoveNext() |> ignore
-        let type' = e |> parseInt 3
-        { Version = version; Type = type' }
+        if advance e then
+            match e |> parseInt 3 with
+            | None | Some 0 -> None
+            | Some v ->
+                if advance e then
+                    match e |> parseInt 3 with
+                    | None | Some 0 -> None
+                    | Some t -> Some { Version = v; Type = t }
+                else None
+        else None
 
     let parseLiteral (e : IEnumerator<char>) =
         [|
@@ -54,52 +64,54 @@ let rec parse (padded : bool) (input : seq<char>) =
                 e.MoveNext() |> ignore
                 let v = (e |> take 4)
                 yield! v
-
-            if padded then
-                let discard = 4 - (((groups * 5) + 6) % 4)
-                for _ in 0..discard do
-                    e.MoveNext() |> ignore
         |] |> String |> binToDec
 
     let parseOperator (e : IEnumerator<char>) =
         e.MoveNext() |> ignore
         let lenBits = if e.Current = '0' then 15 else 11
         e.MoveNext() |> ignore
-        let len = e |> parseInt lenBits
+        let len = e |> parseInt lenBits |> Option.get
         e.MoveNext() |> ignore
 
         e
         |> take len
-        |> parse false
+        |> parse
         |> Seq.toList
 
     seq {
         let e = input.GetEnumerator()
 
-        while e.MoveNext() do
-            let header = e |> parsePackageHeader
-            let package =
-                match header.Type with
-                | 4 -> Literal(header, e |> parseLiteral)
-                | _ -> Operator(header, e |> parseOperator)
-            yield package
+        let rec loop () = seq {
+            match e |> parsePackageHeader with
+            | Some header ->
+                let package =
+                    match header.Type with
+                    | 4 -> Literal(header, e |> parseLiteral)
+                    | _ -> Operator(header, e |> parseOperator)
+                yield package
+                yield! loop ()
+            | None -> () }
+
+        yield! loop ()
     }
 
 let parseHex (input : string) =
     input
     |> hexToBin
-    |> parse true
+    |> parse
 
-"00111000000000000110111101000101001010010001001000000000" |> parse true
+"00111000000000000110111101000101001010010001001000000000" |> parse
 
 "8A004A801A8002F478" |> parseHex
 
-"110100101111111000101000" |> parse true
+"110100101111111000101000" |> parse
 
-"00111000000000000110111101000101001010010001001000000000" |> parse true
-"11010001010" |> parse false
-"0101001000100100" |> parse false
-"110100010100101001000100100" |> parse false
+"00111000000000000110111101000101001010010001001000000000" |> parse
+"11010001010" |> parse
+"0101001000100100" |> parse
+"110100010100101001000100100" |> parse
+"110100101111111000101110100101111111000101" |> parse
 
+"110100101111111000101000" |> parse
 
-"110100101111111000101110100101111111000101" |> parse true
+"000" |> parse
