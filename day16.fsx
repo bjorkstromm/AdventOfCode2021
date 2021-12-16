@@ -74,22 +74,31 @@ let rec parse (input : seq<char>) =
         match e |> parseInt lenBits with
         | None -> []
         | Some len ->
-            if len = 15 then // length
+            if lenBits = 15 then // length
                 e.MoveNext() |> ignore
                 e |> take len |> parse |> Seq.toList
             else // subpackets
-                // e |> advance |> ignore
-                [
-                    for _ in 1..len do
-                        let opt = e |> parsePackageHeader
-                        if opt |> Option.isSome then
-                            let header = opt |> Option.get
-                            let package =
-                                match header.Type with
-                                | 4 -> Literal(header, e |> parseLiteral)
-                                | _ -> Operator(header, e |> parseOperator)
-                            yield package
-                ]
+                [0..len-1]
+                |> List.choose (fun _ ->
+                    match e |> parsePackageHeader with
+                    | None -> None
+                    | Some header ->
+                        let package =
+                            match header.Type with
+                            | 4 -> Literal(header, e |> parseLiteral)
+                            | _ -> Operator(header, e |> parseOperator)
+                        Some package
+                )
+
+    let (|LiteralPackage|_|) (e, header) =
+        if header.Type = 4 then
+            Literal(header, e |> parseLiteral) |> Some
+        else None
+
+    let (|OperatorPackage|_|) (e, header) =
+        if header.Type <> 4 then
+            Operator(header, e |> parseOperator) |> Some
+        else None
 
     seq {
         let e = input.GetEnumerator()
@@ -98,9 +107,11 @@ let rec parse (input : seq<char>) =
             match e |> parsePackageHeader with
             | Some header ->
                 let package =
-                    match header.Type with
-                    | 4 -> Literal(header, e |> parseLiteral)
-                    | _ -> Operator(header, e |> parseOperator)
+                    match (e, header) with
+                    | LiteralPackage p -> p
+                    | OperatorPackage p -> p
+                    | _ -> failwithf "Invalid package header"
+
                 yield package
                 yield! loop ()
             | None -> () }
@@ -139,8 +150,7 @@ let rec eval package =
             let r = rp |> eval
             let l = lp |> eval
             if fn l r then 1L else 0L
-        | _ -> 0L
-        //| p -> failwithf "Invalid number of packages %d" p.Length
+        | p -> failwithf "Invalid number of packages %d" p.Length
 
     match package with
     | Literal (_, v) -> v
