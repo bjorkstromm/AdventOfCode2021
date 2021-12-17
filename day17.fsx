@@ -54,3 +54,10 @@ let part1 filename =
     |> getInput
     ||> getHits
     |> List.maxBy snd
+
+let part2 filename =
+    filename
+    |> getInput
+    ||> getHits
+    |> List.distinctBy fst
+    |> List.length
